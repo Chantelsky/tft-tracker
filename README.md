@@ -1,6 +1,6 @@
 # TFT Comp Tracker
 
-A full-stack app to track Teamfight Tactics match history and build team comps.
+A full-stack app to track match history and build team compositions for [Teamfight Tactics](https://teamfighttactics.leagueoflegends.com/) (TFT), Riot Games' auto-battler.
 
 ## Stack
 
