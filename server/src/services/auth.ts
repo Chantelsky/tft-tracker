@@ -6,7 +6,7 @@ export async function signup(email: string, password: string) {
   const existing = await prisma.user.findUnique({ where: { email } })
 
   if (existing) {
-    throw new Error('Email already in use')
+    throw new Error('Email is already in use')
   }
 
   const hashedPassword = await bcrypt.hash(password, 10)
