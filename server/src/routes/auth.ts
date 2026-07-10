@@ -1,5 +1,8 @@
 import { Router } from 'express'
 import { signup, login } from '../services/auth.js'
+import { requireAuth } from '../middleware/auth.js'
+import { getAccountByRiotId } from '../services/riotApi.js'
+import { prisma } from '../db.js'
 
 const router = Router()
 
@@ -28,6 +31,32 @@ router.post('/login', async (req, res) => {
     } else {
       res.status(500).json({ error: (error as Error).message })
     }
+  }
+})
+
+router.get('/me', requireAuth, async (req, res) => {
+  res.json({ userId: req.userId })
+})
+
+router.post('/link-riot-account', requireAuth, async (req, res) => {
+  const { gameName, tagLine } = req.body
+  const userId = req.userId
+
+  try {
+    const account = await getAccountByRiotId(gameName, tagLine)
+    const riotAccount = await prisma.riotAccount.create({
+      data: {
+        puuid: account.puuid,
+        gameName: account.gameName,
+        tagLine: account.tagLine,
+        userId: userId!,
+      },
+    })
+
+    res.status(201).json(riotAccount)
+  } catch (error) {
+    console.error('Linking Riot account failed:', error)
+    res.status(500).json({ error: 'Server error' })
   }
 })
 
