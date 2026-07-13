@@ -5,15 +5,21 @@ import {
   getMatchDetails,
 } from '../services/riotApi.js'
 import { transformMatch } from '../transform.js'
+import { REGION_MAP } from '../services/regions.js'
 import type { MatchSummaryEntry } from '../types.js'
 
 const router = Router()
 
-router.get('/account/:gameName/:tagLine', async (req, res) => {
-  const { gameName, tagLine } = req.params
+router.get('/account/:region/:gameName/:tagLine', async (req, res) => {
+  const { region, gameName, tagLine } = req.params
+  const regionData = REGION_MAP[region]
+
+  if (!regionData) {
+    return res.status(400).json({ error: 'Invalid region' })
+  }
 
   try {
-    const data = await getAccountByRiotId(gameName, tagLine)
+    const data = await getAccountByRiotId(regionData.account, gameName, tagLine)
     res.json(data)
   } catch (error) {
     console.error('Account lookup failed:', error)
@@ -21,11 +27,16 @@ router.get('/account/:gameName/:tagLine', async (req, res) => {
   }
 })
 
-router.get('/matches/:puuid', async (req, res) => {
-  const { puuid } = req.params
+router.get('/matches/:region/:puuid', async (req, res) => {
+  const { region, puuid } = req.params
+  const regionData = REGION_MAP[region]
+
+  if (!regionData) {
+    return res.status(400).json({ error: 'Invalid region' })
+  }
 
   try {
-    const data = await getMatchIds(puuid)
+    const data = await getMatchIds(regionData.match, puuid)
     res.json(data)
   } catch (error) {
     console.error('Match history lookup failed:', error)
@@ -33,11 +44,16 @@ router.get('/matches/:puuid', async (req, res) => {
   }
 })
 
-router.get('/match/:matchId', async (req, res) => {
-  const { matchId } = req.params
+router.get('/match/:region/:matchId', async (req, res) => {
+  const { region, matchId } = req.params
+  const regionData = REGION_MAP[region]
+
+  if (!regionData) {
+    return res.status(400).json({ error: 'Invalid region' })
+  }
 
   try {
-    const data = await getMatchDetails(matchId)
+    const data = await getMatchDetails(regionData.match, matchId)
     const participants = transformMatch(data)
     res.json(participants)
   } catch (error) {
@@ -46,19 +62,29 @@ router.get('/match/:matchId', async (req, res) => {
   }
 })
 
-router.get('/summary/:gameName/:tagLine', async (req, res) => {
-  const { gameName, tagLine } = req.params
+router.get('/summary/:region/:gameName/:tagLine', async (req, res) => {
+  const { region, gameName, tagLine } = req.params
+  const regionData = REGION_MAP[region]
+
+  if (!regionData) {
+    return res.status(400).json({ error: 'Invalid region' })
+  }
+
   const count = Number(req.query.count) || 5
 
   try {
-    const account = await getAccountByRiotId(gameName, tagLine)
-    const matchIds = await getMatchIds(account.puuid)
+    const account = await getAccountByRiotId(
+      regionData.account,
+      gameName,
+      tagLine
+    )
+    const matchIds = await getMatchIds(regionData.match, account.puuid)
     const recentMatchIds = matchIds.slice(0, count)
 
     const matches: MatchSummaryEntry[] = await Promise.all(
       recentMatchIds.map(
         async (matchId: string): Promise<MatchSummaryEntry> => {
-          const rawMatch = await getMatchDetails(matchId)
+          const rawMatch = await getMatchDetails(regionData.match, matchId)
           const participants = transformMatch(rawMatch)
           const me = participants.find((p) => p.puuid === account.puuid)
           return { matchId, ...me! }
