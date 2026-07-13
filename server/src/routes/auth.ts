@@ -87,4 +87,9 @@ router.post('/link-riot-account', requireAuth, async (req, res) => {
   }
 })
 
+router.post('/logout', (req, res) => {
+  res.clearCookie('token')
+  res.status(200).json({ message: 'Logged out' })
+})
+
 export default router
