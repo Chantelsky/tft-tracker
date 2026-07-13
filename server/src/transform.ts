@@ -1,4 +1,4 @@
-import type { ParticipantSummary } from './types.js'
+import type { ParticipantSummary } from "./types.js";
 
 export function transformMatch(rawMatch: any): ParticipantSummary[] {
   return rawMatch.info.participants.map((p: any) => ({
@@ -12,6 +12,7 @@ export function transformMatch(rawMatch: any): ParticipantSummary[] {
     units: p.units.map((u: any) => ({
       characterId: u.character_id,
       tier: u.tier,
+      rarity: u.rarity,
       itemNames: u.itemNames,
     })),
     traits: p.traits
@@ -22,5 +23,5 @@ export function transformMatch(rawMatch: any): ParticipantSummary[] {
         tierCurrent: t.tier_current,
         tierTotal: t.tier_total,
       })),
-  }))
+  }));
 }

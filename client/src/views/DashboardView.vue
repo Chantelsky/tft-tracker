@@ -5,7 +5,7 @@ import { useDataDragon } from '@/composables/useDataDragon'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
-const { championImages } = useDataDragon()
+const { championImages, version } = useDataDragon()
 const router = useRouter()
 
 const region = ref('OCE')
@@ -42,6 +42,46 @@ async function handleSearch() {
 async function handleSignOut() {
   await authStore.logout()
   router.push('/')
+}
+
+function costBorderClass(rarity: number): string {
+  switch (rarity) {
+    case 0:
+      return 'border-gray-400'
+    case 1:
+      return 'border-green-400'
+    case 2:
+      return 'border-blue-400'
+    case 4:
+      return 'border-purple-400'
+    case 6:
+      return 'border-yellow-400'
+    default:
+      return 'border-border'
+  }
+}
+
+function formatStageRound(lastRound: number): string {
+  if (lastRound <= 4) {
+    return `1-${lastRound}`
+  }
+  const afterStage1 = lastRound - 4
+  const stage = 2 + Math.floor((afterStage1 - 1) / 7)
+  const round = ((afterStage1 - 1) % 7) + 1
+  return `${stage}-${round}`
+}
+
+function getRankedEntry(rankedInfo: any[]) {
+  if (!rankedInfo || rankedInfo.length === 0) {
+    return undefined
+  }
+  return rankedInfo.find((entry) => entry.queueType === 'RANKED_TFT')
+}
+
+function winRate(entry: { wins: number; losses: number }): number {
+  const total = entry.wins + entry.losses
+  if (total === 0) return 0
+  return Math.round((entry.wins / total) * 100)
 }
 </script>
 
@@ -138,9 +178,36 @@ async function handleSignOut() {
     </div>
 
     <div v-if="summary" class="max-w-2xl mx-auto">
-      <p class="text-text-secondary text-sm mb-1">
+      <div
+        v-if="getRankedEntry(summary.rankedInfo)"
+        class="flex items-center gap-3 bg-surface border border-border rounded-lg px-4 py-3 mb-4"
+      >
+        <img
+          :src="`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${summary.summonerInfo.profileIconId}.png`"
+          class="w-9 h-9 rounded-lg"
+          alt="summoner icon"
+        />
+        <div>
+          <p class="text-text-primary text-sm">
+            {{ summary.account.gameName }}#{{ summary.account.tagLine }}
+          </p>
+          <p class="text-text-secondary text-xs">
+            {{ getRankedEntry(summary.rankedInfo).tier }}
+            {{ getRankedEntry(summary.rankedInfo).rank }} ·
+            {{ getRankedEntry(summary.rankedInfo).leaguePoints }} LP
+          </p>
+          <p class="text-text-muted text-xs mt-0.5">
+            {{ getRankedEntry(summary.rankedInfo).wins }}W
+            {{ getRankedEntry(summary.rankedInfo).losses }}L ·
+            {{ winRate(getRankedEntry(summary.rankedInfo)) }}% WR
+          </p>
+        </div>
+      </div>
+
+      <p v-else class="text-text-secondary text-sm mb-1">
         {{ summary.account.gameName }}#{{ summary.account.tagLine }}
       </p>
+
       <p class="text-text-muted text-xs mb-4">Recent matches</p>
 
       <div class="flex flex-col gap-2">
@@ -163,16 +230,26 @@ async function handleSignOut() {
 
           <div class="flex-1">
             <p class="text-text-primary text-xs mb-2">
-              Level {{ match.level }} · Round {{ match.lastRound }}
+              Level {{ match.level }} · Stage
+              {{ formatStageRound(match.lastRound) }}
             </p>
+
             <div class="flex gap-1">
-              <img
+              <div
                 v-for="unit in match.units"
                 :key="unit.characterId"
-                :src="championImages[unit.characterId]"
-                :alt="unit.characterId"
-                class="w-10 h-10 rounded bg-card border-2"
-              />
+                class="text-center"
+              >
+                <p class="text-accent-light text-[11px] leading-none mb-1">
+                  {{ '★'.repeat(unit.tier) }}
+                </p>
+                <img
+                  :src="championImages[unit.characterId]"
+                  :alt="unit.characterId"
+                  class="w-10 h-10 rounded bg-card border-2"
+                  :class="costBorderClass(unit.rarity)"
+                />
+              </div>
             </div>
           </div>
         </div>

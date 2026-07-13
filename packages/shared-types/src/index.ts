@@ -33,3 +33,10 @@ export interface RiotAccount {
   gameName: string;
   tagLine: string;
 }
+
+export interface Unit {
+  characterId: string;
+  tier: number;
+  rarity: number;
+  itemNames: string[];
+}
