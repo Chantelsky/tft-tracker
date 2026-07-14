@@ -2,17 +2,20 @@
 import { ref, watch } from 'vue'
 import { useDataDragon } from '@/composables/useDataDragon'
 import AppHeader from '@/components/AppHeader.vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{
   region: string
   matchId: string
 }>()
 
-const { championImages } = useDataDragon()
+const { championImages, traitImages, traitNames } = useDataDragon()
+const router = useRouter()
 
 const participants = ref<any[]>([])
 const isLoading = ref(false)
 const errorMsg = ref<string | null>(null)
+const gameDatetime = ref<number | null>(null)
 
 async function fetchMatch() {
   isLoading.value = true
@@ -28,9 +31,10 @@ async function fetchMatch() {
       throw new Error(data.error || 'Failed to fetch match')
     }
 
-    participants.value = data.sort(
+    participants.value = data.participants.sort(
       (a: any, b: any) => a.placement - b.placement
     )
+    gameDatetime.value = data.gameDatetime
   } catch (error) {
     errorMsg.value = 'Failed to fetch match data'
   } finally {
@@ -62,11 +66,19 @@ function costBorderClass(rarity: number): string {
   <div class="min-h-screen bg-bg p-8">
     <AppHeader />
 
-    <RouterLink to="/" class="text-text-secondary text-xs mb-2 inline-block">
+    <button
+      @click="router.back()"
+      class="text-text-secondary text-xs mb-2 inline-block cursor-pointer"
+    >
       ← Back to search
-    </RouterLink>
+    </button>
     <h2 class="text-text-primary text-lg font-medium mb-1">Match detail</h2>
-    <p class="text-text-muted text-xs mb-6">Ranked TFT · {{ region }}</p>
+    <p class="text-text-muted text-xs mb-6">
+      Ranked TFT · {{ region }}
+      <span v-if="gameDatetime">
+        · {{ new Date(gameDatetime).toLocaleDateString() }}</span
+      >
+    </p>
 
     <p v-if="errorMsg" class="text-danger text-sm">{{ errorMsg }}</p>
 
@@ -98,8 +110,11 @@ function costBorderClass(rarity: number): string {
           alt="avatar"
         />
 
-        <div class="w-28">
-          <p class="text-text-primary text-xs">
+        <div class="w-28 shrink-0">
+          <p
+            class="text-text-primary text-xs truncate"
+            :title="participant.riotIdGameName"
+          >
             {{ participant.riotIdGameName }}
           </p>
           <p class="text-text-muted text-[10px]">Lvl {{ participant.level }}</p>
@@ -121,6 +136,16 @@ function costBorderClass(rarity: number): string {
               :class="costBorderClass(unit.rarity)"
             />
           </div>
+        </div>
+        <div class="flex gap-1 items-end">
+          <img
+            v-for="trait in participant.traits"
+            :key="trait.name"
+            :src="traitImages[trait.name]"
+            :alt="trait.name"
+            :title="`${traitNames[trait.name]} (${trait.numUnits})`"
+            class="w-7 h-7"
+          />
         </div>
       </div>
     </div>

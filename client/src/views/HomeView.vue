@@ -151,6 +151,12 @@ function winRate(entry: { wins: number; losses: number }): number {
       {{ errorMsg }}
     </p>
 
+    <div v-if="isLoading" class="flex justify-center py-10">
+      <div
+        class="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin"
+      ></div>
+    </div>
+
     <div v-if="summary" class="max-w-2xl mx-auto">
       <div
         v-if="getRankedEntry(summary.rankedInfo)"

@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 
 const championImages = ref<Record<string, string>>({})
+const traitImages = ref<Record<string, string>>({})
+const traitNames = ref<Record<string, string>>({})
 const version = ref<string | null>(null)
 let loaded = false
 
@@ -15,24 +17,40 @@ async function loadDataDragon() {
   ).then((r) => r.json())
   version.value = versions[0]
 
-  const data = await fetch(
+  const champData = await fetch(
     'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json'
   ).then((r) => r.json())
 
-  const champions = data[CURRENT_SET] || []
-  const map: Record<string, string> = {}
-
+  const champions = champData[CURRENT_SET] || []
+  const champMap: Record<string, string> = {}
   for (const champ of champions) {
     const path = champ.squareIconPath
       .replace('/lol-game-data/assets/', '')
       .toLowerCase()
-    map[champ.character_id] =
+    champMap[champ.character_id] =
       `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/${path}`
   }
+  championImages.value = champMap
 
-  championImages.value = map
+  const traitData = await fetch(
+    'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/tfttraits.json'
+  ).then((r) => r.json())
+
+  const traitMap: Record<string, string> = {}
+  const nameMap: Record<string, string> = {}
+  for (const trait of traitData) {
+    if (trait.set !== CURRENT_SET) continue
+    const path = trait.icon_path
+      .replace('/lol-game-data/assets/', '')
+      .toLowerCase()
+    traitMap[trait.trait_id] =
+      `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/${path}`
+    nameMap[trait.trait_id] = trait.display_name
+  }
+  traitImages.value = traitMap
+  traitNames.value = nameMap
 }
 
 export function useDataDragon() {
-  return { championImages, version, loadDataDragon }
+  return { championImages, traitImages, traitNames, version, loadDataDragon }
 }

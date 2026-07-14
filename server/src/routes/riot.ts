@@ -59,9 +59,11 @@ router.get("/match/:region/:matchId", async (req, res) => {
   }
 
   try {
-    const data = await getMatchDetails(regionData.match, matchId);
+    const data = (await getMatchDetails(regionData.match, matchId)) as {
+      info: { game_datetime: number };
+    };
     const participants = transformMatch(data);
-    res.json(participants);
+    res.json({ gameDatetime: data.info.game_datetime, participants });
   } catch (error) {
     console.error("Match detail lookup failed:", error);
     res.status(500).json({ error: "Server error" });
