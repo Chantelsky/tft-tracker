@@ -3,7 +3,8 @@ import { ref, watch } from 'vue'
 import { useDataDragon } from '@/composables/useDataDragon'
 import AppHeader from '@/components/AppHeader.vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { costBorderClass, formatStageRound, winRate } from '@/utils/tft'
+import { costBorderClass, formatStageRound, getRankedEntry } from '@/utils/tft'
+import RankCard from '@/components/RankCard.vue'
 
 const props = defineProps<{
   region?: string
@@ -12,7 +13,7 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
-const { championImages, version } = useDataDragon()
+const { championImages } = useDataDragon()
 
 const region = ref(props.region || 'OCE')
 const gameName = ref(props.gameName || '')
@@ -56,13 +57,6 @@ watch(
 
 function handleSearch() {
   router.push(`/search/${region.value}/${gameName.value}/${tagLine.value}`)
-}
-
-function getRankedEntry(rankedInfo: any[]) {
-  if (!rankedInfo || rankedInfo.length === 0) {
-    return undefined
-  }
-  return rankedInfo.find((entry) => entry.queueType === 'RANKED_TFT')
 }
 </script>
 
@@ -125,32 +119,19 @@ function getRankedEntry(rankedInfo: any[]) {
       ></div>
     </div>
 
-    <div v-if="summary" class="max-w-2xl mx-auto">
-      <div
+    <div v-if="summary" class="max-w-4xl mx-auto">
+      <RankCard
         v-if="getRankedEntry(summary.rankedInfo)"
-        class="flex items-center gap-3 bg-surface border border-border rounded-lg px-4 py-3 mb-4"
-      >
-        <img
-          :src="`https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${summary.summonerInfo.profileIconId}.png`"
-          class="w-9 h-9 rounded-lg"
-          alt="summoner icon"
-        />
-        <div>
-          <p class="text-text-primary text-sm">
-            {{ summary.account.gameName }}#{{ summary.account.tagLine }}
-          </p>
-          <p class="text-text-secondary text-xs">
-            {{ getRankedEntry(summary.rankedInfo).tier }}
-            {{ getRankedEntry(summary.rankedInfo).rank }} ·
-            {{ getRankedEntry(summary.rankedInfo).leaguePoints }} LP
-          </p>
-          <p class="text-text-muted text-xs mt-0.5">
-            {{ getRankedEntry(summary.rankedInfo).wins }}W
-            {{ getRankedEntry(summary.rankedInfo).losses }}L ·
-            {{ winRate(getRankedEntry(summary.rankedInfo)) }}% WR
-          </p>
-        </div>
-      </div>
+        :game-name="summary.account.gameName"
+        :tag-line="summary.account.tagLine"
+        :profile-icon-id="summary.summonerInfo.profileIconId"
+        :tier="getRankedEntry(summary.rankedInfo).tier"
+        :rank="getRankedEntry(summary.rankedInfo).rank"
+        :league-points="getRankedEntry(summary.rankedInfo).leaguePoints"
+        :wins="getRankedEntry(summary.rankedInfo).wins"
+        :losses="getRankedEntry(summary.rankedInfo).losses"
+        class="mb-4"
+      />
 
       <p v-else class="text-text-secondary text-sm mb-1">
         {{ summary.account.gameName }}#{{ summary.account.tagLine }}

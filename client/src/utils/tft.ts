@@ -30,3 +30,10 @@ export function winRate(entry: { wins: number; losses: number }): number {
   if (total === 0) return 0
   return Math.round((entry.wins / total) * 100)
 }
+
+export function getRankedEntry(rankedInfo: any[]) {
+  if (!rankedInfo || rankedInfo.length === 0) {
+    return undefined
+  }
+  return rankedInfo.find((entry) => entry.queueType === 'RANKED_TFT')
+}

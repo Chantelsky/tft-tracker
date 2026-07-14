@@ -1,13 +1,35 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
+import AnalyticsDashboard from '@/components/AnalyticsDashboard.vue'
+import RankCard from '@/components/RankCard.vue'
+import { getRankedEntry } from '@/utils/tft'
 
 const region = ref('OCE')
 const gameName = ref('')
 const tagLine = ref('')
 const isLoading = ref(false)
+const isChecking = ref(true)
 const errorMsg = ref<string | null>(null)
 const linkedAccount = ref<any>(null)
+
+async function checkLinkedAccount() {
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/me/riot-account', {
+      credentials: 'include',
+    })
+    const data = await res.json()
+    linkedAccount.value = data
+  } catch (error) {
+    console.error('Failed to check linked account:', error)
+  } finally {
+    isChecking.value = false
+  }
+}
+
+onMounted(() => {
+  checkLinkedAccount()
+})
 
 async function handleLink() {
   isLoading.value = true
@@ -34,7 +56,7 @@ async function handleLink() {
     if (!res.ok) {
       throw new Error(data.message || 'Failed to link Riot account')
     }
-    linkedAccount.value = data
+    await checkLinkedAccount()
   } catch (error) {
     errorMsg.value = (error as Error).message
   } finally {
@@ -100,11 +122,20 @@ async function handleLink() {
       <p v-if="errorMsg" class="text-danger text-sm mt-4">{{ errorMsg }}</p>
     </div>
 
-    <div v-else class="text-center py-12">
-      <p class="text-text-primary text-sm">
-        Linked: {{ linkedAccount.gameName }}#{{ linkedAccount.tagLine }}
-      </p>
-      <p class="text-text-muted text-xs mt-2">Full analytics coming soon</p>
+    <div v-else class="max-w-4xl mx-auto">
+      <RankCard
+        v-if="getRankedEntry(linkedAccount.rankedInfo)"
+        :game-name="linkedAccount.gameName"
+        :tag-line="linkedAccount.tagLine"
+        :profile-icon-id="linkedAccount.summonerInfo.profileIconId"
+        :tier="getRankedEntry(linkedAccount.rankedInfo).tier"
+        :rank="getRankedEntry(linkedAccount.rankedInfo).rank"
+        :league-points="getRankedEntry(linkedAccount.rankedInfo).leaguePoints"
+        :wins="getRankedEntry(linkedAccount.rankedInfo).wins"
+        :losses="getRankedEntry(linkedAccount.rankedInfo).losses"
+        class="mb-4"
+      />
+      <AnalyticsDashboard />
     </div>
   </div>
 </template>
