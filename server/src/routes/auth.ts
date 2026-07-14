@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { signup, login } from "../services/auth.js";
 import { requireAuth } from "../middleware/auth.js";
-import { getAccountByRiotId } from "../services/riotApi.js";
+import {
+  getAccountByRiotId,
+  getRankedInfo,
+  getSummonerInfo,
+} from "../services/riotApi.js";
 import { prisma } from "../db.js";
 import { REGION_MAP } from "../services/regions.js";
 
@@ -86,6 +90,7 @@ router.post("/link-riot-account", requireAuth, async (req, res) => {
         puuid: account.puuid,
         gameName: account.gameName,
         tagLine: account.tagLine,
+        region: region,
         userId: userId!,
       },
     });
@@ -102,4 +107,35 @@ router.post("/logout", (req, res) => {
   res.status(200).json({ message: "Logged out" });
 });
 
+router.get("/me/riot-account", requireAuth, async (req, res) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const riotAccount = await prisma.riotAccount.findFirst({
+      where: { userId: req.userId },
+    });
+
+    if (!riotAccount) {
+      return res.json(null);
+    }
+
+    const regionData = REGION_MAP[riotAccount.region];
+
+    if (!regionData) {
+      return res.status(400).json({ error: "Invalid region" });
+    }
+
+    const [rankedInfo, summonerInfo] = await Promise.all([
+      getRankedInfo(regionData.platform, riotAccount.puuid),
+      getSummonerInfo(regionData.platform, riotAccount.puuid),
+    ]);
+
+    res.json({ ...riotAccount, rankedInfo, summonerInfo });
+  } catch (error) {
+    console.error("Fetching linked Riot account failed:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 export default router;

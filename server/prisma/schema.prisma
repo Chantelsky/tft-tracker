@@ -25,6 +25,7 @@ model RiotAccount {
   puuid     String   @unique
   gameName  String
   tagLine   String
+  region String
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
