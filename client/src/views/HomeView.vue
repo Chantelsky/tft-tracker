@@ -1,25 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useDataDragon } from '@/composables/useDataDragon'
 import AppHeader from '@/components/AppHeader.vue'
+import { RouterLink, useRouter } from 'vue-router'
 
+const props = defineProps<{
+  region?: string
+  gameName?: string
+  tagLine?: string
+}>()
+
+const router = useRouter()
 const { championImages, version } = useDataDragon()
 
-const region = ref('OCE')
-const gameName = ref('')
-const tagLine = ref('')
+const region = ref(props.region || 'OCE')
+const gameName = ref(props.gameName || '')
+const tagLine = ref(props.tagLine || '')
 const isLoading = ref(false)
 const errorMsg = ref<string | null>(null)
 const summary = ref<any>(null)
 
-async function handleSearch() {
+async function fetchSummary() {
   isLoading.value = true
   errorMsg.value = null
   summary.value = null
 
   try {
     const res = await fetch(
-      `http://localhost:3000/api/summary/${region.value}/${gameName.value}/${tagLine.value}?count=5`
+      `http://localhost:3000/api/summary/${props.region}/${props.gameName}/${props.tagLine}?count=5`
     )
     const data = await res.json()
 
@@ -33,6 +41,20 @@ async function handleSearch() {
   } finally {
     isLoading.value = false
   }
+}
+
+watch(
+  () => props.gameName,
+  () => {
+    if (props.gameName && props.tagLine && props.region) {
+      fetchSummary()
+    }
+  },
+  { immediate: true }
+)
+
+function handleSearch() {
+  router.push(`/search/${region.value}/${gameName.value}/${tagLine.value}`)
 }
 
 function costBorderClass(rarity: number): string {
@@ -163,9 +185,10 @@ function winRate(entry: { wins: number; losses: number }): number {
       <p class="text-text-muted text-xs mb-4">Recent matches</p>
 
       <div class="flex flex-col gap-2">
-        <div
+        <RouterLink
           v-for="match in summary.matches"
           :key="match.matchId"
+          :to="`/match/${region}/${match.matchId}`"
           class="flex items-center gap-4 bg-surface border border-border rounded-lg p-3"
           :class="
             match.placement <= 4
@@ -202,9 +225,10 @@ function winRate(entry: { wins: number; losses: number }): number {
                   :class="costBorderClass(unit.rarity)"
                 />
               </div>
+              <span class="text-text-muted text-xs ml-auto">View match →</span>
             </div>
           </div>
-        </div>
+        </RouterLink>
       </div>
     </div>
   </div>
