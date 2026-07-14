@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = ref<string | null>(null)
   const userId = ref<string | null>(null)
   const error = ref<string | null>(null)
+  const isAuthChecked = ref(false)
 
   async function signup(email: string, password: string) {
     error.value = null
@@ -67,5 +68,14 @@ export const useAuthStore = defineStore('auth', () => {
     userId.value = null
   }
 
-  return { userEmail, userId, error, signup, login, checkAuth, logout }
+  return {
+    userEmail,
+    userId,
+    error,
+    signup,
+    login,
+    checkAuth,
+    logout,
+    isAuthChecked,
+  }
 })

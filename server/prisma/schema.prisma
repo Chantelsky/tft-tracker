@@ -28,4 +28,50 @@ model RiotAccount {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  matches   Match[]
+  lpSnapshots LpSnapshot[]
+}
+
+model Match {
+  id            String      @id @default(cuid())
+  matchId       String
+  region        String
+  placement     Int
+  level         Int
+  lastRound     Int
+  gameDatetime  DateTime
+  riotAccountId String
+  riotAccount   RiotAccount @relation(fields: [riotAccountId], references: [id])
+  createdAt     DateTime    @default(now())
+  matchUnits MatchUnit[]
+  matchTraits MatchTrait[]
+}
+
+model MatchUnit {
+  id String @id @default(cuid())
+  characterId String
+  tier Int
+  rarity Int
+  matchId String
+  match        Match    @relation(fields: [matchId], references: [id])
+}
+
+model MatchTrait {
+  id String @id @default(cuid())
+  name String
+  numUnits Int
+  tierCurrent Int
+  tierTotal Int
+  matchId String
+  match        Match    @relation(fields: [matchId], references: [id])
+}
+
+model LpSnapshot {
+  id            String      @id @default(cuid())
+  tier          String
+  rank          String
+  leaguePoints  Int
+  recordedAt    DateTime    @default(now())
+  riotAccountId String
+  riotAccount   RiotAccount @relation(fields: [riotAccountId], references: [id])
 }
