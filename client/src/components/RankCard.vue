@@ -12,6 +12,12 @@ defineProps<{
   leaguePoints: number
   wins: number
   losses: number
+  showSyncButton?: boolean
+  isSyncing?: boolean
+}>()
+
+defineEmits<{
+  sync: []
 }>()
 
 function winRate(wins: number, losses: number): number {
@@ -39,5 +45,18 @@ function winRate(wins: number, losses: number): number {
         {{ wins }}W {{ losses }}L · {{ winRate(wins, losses) }}% WR
       </p>
     </div>
+
+    <button
+      v-if="showSyncButton"
+      @click="$emit('sync')"
+      :disabled="isSyncing"
+      class="bg-accent text-white text-xs font-medium px-3 py-1.5 rounded-md cursor-pointer disabled:opacity-50 ml-auto flex items-center gap-1.5"
+    >
+      <div
+        v-if="isSyncing"
+        class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"
+      ></div>
+      {{ isSyncing ? 'Syncing...' : 'Sync matches' }}
+    </button>
   </div>
 </template>

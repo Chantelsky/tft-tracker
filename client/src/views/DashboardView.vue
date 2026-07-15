@@ -10,6 +10,7 @@ const gameName = ref('')
 const tagLine = ref('')
 const isLoading = ref(false)
 const isChecking = ref(true)
+const isSyncing = ref(false)
 const errorMsg = ref<string | null>(null)
 const linkedAccount = ref<any>(null)
 
@@ -61,6 +62,27 @@ async function handleLink() {
     errorMsg.value = (error as Error).message
   } finally {
     isLoading.value = false
+  }
+}
+
+async function handleSync() {
+  isSyncing.value = true
+  errorMsg.value = null
+
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/me/sync-matches', {
+      method: 'POST',
+      credentials: 'include',
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to sync matches')
+    }
+  } catch (error) {
+    errorMsg.value = (error as Error).message
+  } finally {
+    isSyncing.value = false
   }
 }
 </script>
@@ -133,6 +155,9 @@ async function handleLink() {
         :league-points="getRankedEntry(linkedAccount.rankedInfo).leaguePoints"
         :wins="getRankedEntry(linkedAccount.rankedInfo).wins"
         :losses="getRankedEntry(linkedAccount.rankedInfo).losses"
+        :show-sync-button="true"
+        :is-syncing="isSyncing"
+        @sync="handleSync"
         class="mb-4"
       />
       <AnalyticsDashboard />

@@ -4,47 +4,59 @@ import Chart from 'chart.js/auto'
 import { useDataDragon } from '@/composables/useDataDragon'
 import { costBorderClass } from '@/utils/tft'
 
-const { championImages } = useDataDragon()
+const { championImages, traitNames } = useDataDragon()
 
-// Mock data — replace with real API calls tomorrow
-const stats = ref({
-  avgPlacement: 4.2,
-  top4Rate: 55,
-  gamesTracked: 42,
-  winRate: 10,
-})
+const stats = ref({ avgPlacement: 0, top4Rate: 0, gamesTracked: 0, winRate: 0 })
+const worstChampions = ref<any[]>([])
+const worstTraits = ref<any[]>([])
+const lpHistory = ref<{ leaguePoints: number; recordedAt: string }[]>([])
+const recentMatches = ref<any[]>([])
 
-const worstChampions = ref([
-  { characterId: 'TFT17_Zed', top4Rate: 32 },
-  { characterId: 'TFT17_Riven', top4Rate: 39 },
-  { characterId: 'TFT17_Karma', top4Rate: 46 },
-])
+async function fetchAnalytics() {
+  const res = await fetch('http://localhost:3000/api/auth/me/analytics', {
+    credentials: 'include',
+  })
+  const data = await res.json()
 
-const worstTraits = ref([
-  { name: 'Dark Star', top4Rate: 41 },
-  { name: 'Stargazer', top4Rate: 48 },
-  { name: 'Astronaut', top4Rate: 52 },
-])
+  stats.value = data.stats
+  worstChampions.value = data.worstChampions
+  worstTraits.value = data.worstTraits
+  lpHistory.value = data.lpHistory
+  recentMatches.value = data.recentMatches
 
-const lpHistory = ref([
-  800, 780, 820, 810, 860, 840, 880, 900, 870, 920, 950, 930, 970, 1000, 980,
-  1020, 1050, 1030, 1070, 1100,
-])
+  renderChart()
+}
 
-onMounted(() => {
+function renderChart() {
   const ctx = document.getElementById('lpChart') as HTMLCanvasElement
+
+  const labels = lpHistory.value.map((point) =>
+    new Date(point.recordedAt).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    })
+  )
+  const values = lpHistory.value.map((point) => point.leaguePoints)
+
+  const pointColors = values.map((val, i) => {
+    if (i === 0) return '#7a7a8c'
+    return val >= values[i - 1] ? '#2cb67d' : '#e5484d'
+  })
+
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: lpHistory.value.map((_, i) => i + 1),
+      labels,
       datasets: [
         {
-          data: lpHistory.value,
+          data: values,
           borderColor: '#7f5af0',
           backgroundColor: 'rgba(127,90,240,0.1)',
           fill: true,
           tension: 0.3,
-          pointRadius: 0,
+          pointRadius: 4,
+          pointBackgroundColor: pointColors,
+          pointBorderColor: pointColors,
           borderWidth: 2,
         },
       ],
@@ -54,41 +66,19 @@ onMounted(() => {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { display: false },
+        x: {
+          ticks: { color: '#7a7a8c', font: { size: 10 } },
+          grid: { display: false },
+        },
         y: { ticks: { color: '#7a7a8c' }, grid: { color: '#1a1926' } },
       },
     },
   })
-})
+}
 
-//placeholder for recent matches, will be replaced with real data from API
-const recentMatches = ref([
-  {
-    matchId: 'OC1_1',
-    placement: 3,
-    level: 9,
-    units: [
-      { characterId: 'TFT17_Shen', tier: 2, rarity: 2 },
-      { characterId: 'TFT17_Jhin', tier: 1, rarity: 4 },
-      { characterId: 'TFT17_Nunu', tier: 2, rarity: 4 },
-    ],
-  },
-  {
-    matchId: 'OC1_2',
-    placement: 1,
-    level: 9,
-    units: [
-      { characterId: 'TFT17_Jhin', tier: 3, rarity: 4 },
-      { characterId: 'TFT17_Karma', tier: 2, rarity: 4 },
-    ],
-  },
-  {
-    matchId: 'OC1_3',
-    placement: 6,
-    level: 8,
-    units: [{ characterId: 'TFT17_Zed', tier: 1, rarity: 0 }],
-  },
-])
+onMounted(() => {
+  fetchAnalytics()
+})
 </script>
 
 <template>
@@ -153,7 +143,7 @@ const recentMatches = ref([
             class="flex items-center gap-2"
           >
             <span class="text-text-secondary text-xs w-24 truncate">{{
-              trait.name
+              traitNames[trait.name] || trait.name
             }}</span>
             <div class="flex-1 bg-card rounded h-2">
               <div
